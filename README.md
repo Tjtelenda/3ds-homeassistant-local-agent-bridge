@@ -141,6 +141,18 @@ above is the whole contract. None of the game's sprites, artwork, or
 house layout are included here — this repository is the bridge code,
 an example configuration, and documentation only.
 
+## Mapping your own house
+
+The author's house exists in the client as a tile-grid level spec:
+rooms as zones, walls derived by rule, furniture placed by tile
+rectangle, and one wall switch per room driving the real lights
+through this bridge. **[docs/HOUSE-MAPPING.md](docs/HOUSE-MAPPING.md)**
+outlines exactly how that mapping was done, the steps and the sprite
+assets you would need to create to make a sprite version of your own
+home, and what state the project is in for someone starting today —
+in short: the bridge is usable now, the mapping method is documented,
+and the game client itself is not published.
+
 ## What changed for publication
 
 This is the production bridge with the house taken out of the code: the
