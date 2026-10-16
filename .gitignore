@@ -1,0 +1,8 @@
+config.json
+secret.txt
+session_id.txt
+chat_log.jsonl
+replies.jsonl
+download/
+__pycache__/
+*.pyc
