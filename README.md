@@ -11,6 +11,16 @@ daily. It is a single Python file (`bridge.py`, standard library only)
 speaking JSON over HTTP/1.1, with a tiny companion script
 (`agent-reply.py`) that the local agent uses to answer.
 
+## Status
+
+**Work in progress, and updated regularly.** The bridge is in daily use
+and changes as the companion 3DS client gains features (the client is
+in its v1.2.x series, with releases throughout October 2026). Expect
+endpoints and config to evolve; anything that changes the client
+contract is called out in the design notes below. This published
+edition is synced from the production bridge — last synced
+October 15, 2026.
+
 ## How it fits together
 
 ```
@@ -87,6 +97,30 @@ Two files beside `bridge.py` are runtime state and are never committed:
 `secret.txt` (the shared key) and `session_id.txt` (the Muse gadget
 session id for chat).
 
+## What you'll need
+
+- **A Linux host on your home network** to run the bridge (the author
+  uses a small home server). The bridge itself is Python 3, standard
+  library only — there is nothing to pip install.
+- **Home Assistant**, reachable from that host, with a long-lived
+  access token for the `ha-api` helper (see `ha-api.example.sh`). The
+  token lives in a mode-600 file on the host; neither the bridge nor
+  the client ever sees it.
+- **Your own entity mappings** in `config.json` — which lights,
+  switches, locks, media players, and PCs the bridge should expose.
+- **A client.** Anything that can send HTTP requests with a shared-key
+  header and read JSON can use the API; the author's 3DS app is one
+  client, not a requirement of the protocol.
+
+Optional, only for the endpoints that use them:
+
+- **Music Assistant** set up in Home Assistant, for `/v1/music`.
+- **A Muse gadget pairing** on the bridge host (the `musegadget` CLI
+  and a session id), for `/v1/chat`. Every other endpoint works without
+  it.
+- **systemd**, if you want it running as a service
+  (`bridge.service.example`).
+
 ## Running it
 
 ```bash
@@ -103,7 +137,9 @@ A systemd unit example is in `bridge.service.example`.
 
 The 3DS client (a homebrew app with a walk-around house map) is not in
 this repository; this is the server half it talks to. The protocol
-above is the whole contract.
+above is the whole contract. None of the game's sprites, artwork, or
+house layout are included here — this repository is the bridge code,
+an example configuration, and documentation only.
 
 ## What changed for publication
 
