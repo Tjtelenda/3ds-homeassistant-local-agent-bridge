@@ -1,15 +1,15 @@
-# 3DS Seb bridge
+# 3DS HomeAssistant Local Agent bridge
 
 A small authenticated HTTP API that sits between a Nintendo 3DS
 homebrew client and Home Assistant, so a game-like 3DS app can show live
 house state, toggle real devices, control media and PCs, request music,
-and chat with a Muse assistant — while every Home Assistant call stays
+and chat with a local Muse agent — while every Home Assistant call stays
 on the server side.
 
 The bridge runs in production on my home server, serving the 3DS client
 daily. It is a single Python file (`bridge.py`, standard library only)
 speaking JSON over HTTP/1.1, with a tiny companion script
-(`seb-reply.py`) that the assistant uses to answer.
+(`agent-reply.py`) that the local agent uses to answer.
 
 ## How it fits together
 
@@ -17,7 +17,7 @@ speaking JSON over HTTP/1.1, with a tiny companion script
 Nintendo 3DS client ──HTTP + shared key──▶ bridge.py ──▶ ha-api ──▶ Home Assistant REST API
    (homebrew, libcurl)                       │
                                              ├─▶ musegadget send-user-msg ──▶ Muse (chat)
-                                             └─▶ replies.jsonl ◀── seb-reply.py ◀── Muse
+                                             └─▶ replies.jsonl ◀── agent-reply.py ◀── Muse
 ```
 
 The 3DS never holds a Home Assistant token, and the bridge never holds
@@ -28,12 +28,12 @@ via stdin, so the token never appears in process arguments.
 Chat rides Meta's Muse Gadget pattern instead of a custom channel: the
 bridge runs on a Linux box paired as a Muse gadget, `POST /v1/chat`
 forwards the message with `musegadget send-user-msg`, and the assistant
-appends replies to `replies.jsonl` (via `seb-reply.py`), which the
+appends replies to `replies.jsonl` (via `agent-reply.py`), which the
 client polls with `GET /v1/reply?after=N`.
 
 ## Endpoints
 
-All `/v1/*` endpoints require an `X-Seb-Key` header matching the bridge
+All `/v1/*` endpoints require an `X-Bridge-Key` header matching the bridge
 secret file.
 
 | Endpoint | What it does |
@@ -46,8 +46,8 @@ secret file.
 | `POST /v1/music` | `{"text": "...", "target": "<optional>"}` — Music Assistant search, then play the first result |
 | `POST /v1/media` | `{"device": "...", "cmd": "power\|play_pause\|volume_up\|volume_down"}` |
 | `POST /v1/pc` | `{"pc": "<id>", "action": "on\|off"}` — start (Wake-on-LAN script) / graceful shutdown script |
-| `POST /v1/chat` | `{"text": "..."}` — forward to the assistant |
-| `GET /v1/reply?after=N` | Assistant replies with id > N |
+| `POST /v1/chat` | `{"text": "..."}` — forward to the local agent |
+| `GET /v1/reply?after=N` | Agent replies with id > N |
 | `GET /dl/<file>` | Client binary downloads (`.3dsx` / `.cia` only) |
 
 ## Design notes from production
@@ -69,7 +69,7 @@ secret file.
   redundant or blind actions (`already_on`, `already_off`,
   `state_unknown`).
 - **Music fallback.** If Music Assistant search fails, the request is
-  forwarded to the assistant as a chat message rather than failing
+  forwarded to the local agent as a chat message rather than failing
   silently.
 - **Downloads are an allowlist.** Only client binaries are served from
   `/dl/`; a client config file is never served (it can embed the bridge

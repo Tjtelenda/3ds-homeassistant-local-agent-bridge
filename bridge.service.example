@@ -1,13 +1,13 @@
 [Unit]
-Description=3DS Seb bridge (Home Assistant + Muse chat for the 3DS client)
+Description=3DS HomeAssistant Local Agent bridge (Home Assistant + Muse chat for the 3DS client)
 After=network-online.target musegadget.service
 Wants=network-online.target
 
 [Service]
 Type=simple
 User=youruser
-WorkingDirectory=/home/youruser/3ds-seb-bridge
-ExecStart=/usr/bin/python3 /home/youruser/3ds-seb-bridge/bridge.py
+WorkingDirectory=/home/youruser/3ds-homeassistant-local-agent-bridge
+ExecStart=/usr/bin/python3 /home/youruser/3ds-homeassistant-local-agent-bridge/bridge.py
 Restart=always
 RestartSec=3
 

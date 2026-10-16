@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""3DS Seb Home bridge.
+"""3DS HomeAssistant Local Agent bridge.
 
 Thin, authenticated HTTP API between a Nintendo 3DS homebrew client and
 Home Assistant, with a chat path to a Muse gadget assistant:
@@ -12,14 +12,14 @@ Home Assistant, with a chat path to a Muse gadget assistant:
   POST /v1/toggle         -> {"device": "<id>"} toggles that device
   POST /v1/chat           -> {"text": "..."} forwards to the assistant via
                              `musegadget send-user-msg --session-id <uuid>`
-  GET  /v1/reply?after=N  -> assistant replies appended by seb-reply.py
+  GET  /v1/reply?after=N  -> assistant replies appended by agent-reply.py
   POST /v1/music          -> {"text": "...", "target": "<optional entity>"}
                              Music Assistant search + play_media
   POST /v1/media          -> {"device": "...", "cmd": "power|..."}
   POST /v1/pc             -> {"pc": "<id>", "action": "on|off"} start /
                              shutdown scripts; state from uptime telemetry
 
-All /v1/* endpoints require header X-Seb-Key matching the secret file.
+All /v1/* endpoints require header X-Bridge-Key matching the secret file.
 No Home Assistant token lives here; HA access goes through a small
 ha-api helper (example included) that holds the token.
 
@@ -348,20 +348,20 @@ def interact_payload(entity):
     return 200, {"ok": False, "mapped": False}
 
 
-def _send_seb(message):
+def _send_agent(message):
     return subprocess.run(
         [os.environ.get("MUSEGADGET_BIN", "/usr/local/bin/musegadget"), "send-user-msg",
          "--session-id", SESSION_ID, message],
         capture_output=True, text=True, timeout=30)
 
 
-def _forward_music_to_seb(text):
-    """Music fallback: hand the request to Seb in Muse ([3DS-MUSIC])."""
+def _forward_music_to_agent(text):
+    """Music fallback: hand the request to the local agent in Muse ([3DS-MUSIC])."""
     mid = next_id(CHAT_LOG)
     append_jsonl(CHAT_LOG, {"id": mid, "ts": time.time(),
                             "text": f"[3DS-MUSIC] {text}"})
     try:
-        return _send_seb(f"[3DS-MUSIC] {text}").returncode == 0
+        return _send_agent(f"[3DS-MUSIC] {text}").returncode == 0
     except Exception:
         return False
 
@@ -378,8 +378,8 @@ def _ma_entry_id():
 
 
 def _music_error(text, exc):
-    forwarded = _forward_music_to_seb(text)
-    return 200, {"ok": False, "forwarded_to_seb": forwarded,
+    forwarded = _forward_music_to_agent(text)
+    return 200, {"ok": False, "forwarded_to_agent": forwarded,
                  "error": str(exc)[:200] or "music assistant unavailable"}
 
 
@@ -562,7 +562,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _authed(self):
-        return self.headers.get("X-Seb-Key", "") == SECRET
+        return self.headers.get("X-Bridge-Key", "") == SECRET
 
     def _body(self):
         length = int(self.headers.get("Content-Length") or 0)
@@ -601,7 +601,7 @@ class Handler(BaseHTTPRequestHandler):
                     return
             return self._send(404, {"error": "not found"})
         if url.path == "/health":
-            return self._send(200, {"ok": True, "service": "3ds-seb-bridge"})
+            return self._send(200, {"ok": True, "service": "3ds-homeassistant-local-agent-bridge"})
         if not self._authed():
             return self._send(401, {"error": "bad key"})
         try:
